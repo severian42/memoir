@@ -11,19 +11,16 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/genai": "https://esm.sh/@google/genai@^0.8.0"
-        }
-      }
-    </script>
+    <!-- Removed Google GenAI import map - no longer using AI features -->
   </head>
   <body>
     <div class="app-container">
         <header class="app-header">
             <h1 class="app-title"><i class="fas fa-book-open"></i> The Living Memoir</h1>
             <div class="header-actions">
+              <span id="save-status" class="save-status" title="Auto-save status">
+                <i class="fas fa-check-circle"></i>
+              </span>
               <button class="action-button" id="exportButton" title="Compile & Export Memoir">
                 <i class="fas fa-file-export"></i>
               </button>
@@ -70,6 +67,9 @@
                 </div>
             </div>
             <div class="modal-actions">
+                <button id="export-data-btn" class="modal-button secondary">Export Data</button>
+                <button id="import-data-btn" class="modal-button secondary">Import Data</button>
+                <input type="file" id="import-data-input" accept=".json" style="display: none;">
                 <button id="download-memoir-btn" class="modal-button primary">Export as PDF</button>
             </div>
         </div>
