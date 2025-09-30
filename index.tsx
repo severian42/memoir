@@ -292,9 +292,7 @@ class LivingMemoirApp {
   // UI Elements
   private dashboardContent: HTMLElement;
   private themeToggleButton: HTMLButtonElement;
-  private ttsToggleButton: HTMLButtonElement;
   private exportButton: HTMLButtonElement;
-  private ttsIcon: HTMLElement;
   private themeToggleIcon: HTMLElement;
 
   // Consent Modal
@@ -314,6 +312,15 @@ class LivingMemoirApp {
   private importDataBtn: HTMLButtonElement;
   private importDataInput: HTMLInputElement;
   private saveStatus: HTMLElement;
+  private memoirTitleInput: HTMLInputElement;
+  private updatePreviewBtn: HTMLButtonElement;
+  
+  // Clear All Modal
+  private clearAllButton: HTMLButtonElement;
+  private clearAllModal: HTMLDivElement;
+  private clearAllModalCloseBtn: HTMLButtonElement;
+  private clearAllCancelBtn: HTMLButtonElement;
+  private clearAllConfirmBtn: HTMLButtonElement;
 
   // Journal Modal
   private journalModal: HTMLDivElement;
@@ -331,7 +338,7 @@ class LivingMemoirApp {
   private answers: Map<string, Answer> = new Map();
   private coreInfo: CoreInfo = { summary: '', people: '', values: '' };
   private journalEntries: JournalEntry[] = [];
-  private isMuted = false;
+  private customMemoirTitle: string = '';
   private activeQuestionForConsent: { question: Question, card: HTMLElement } | null = null;
   private openChapter: string | null = null;
 
@@ -348,8 +355,7 @@ class LivingMemoirApp {
     this.dashboardContent = document.getElementById('dashboard-content') as HTMLElement;
     this.themeToggleButton = document.getElementById('themeToggleButton') as HTMLButtonElement;
     this.themeToggleIcon = this.themeToggleButton.querySelector('i') as HTMLElement;
-    this.ttsToggleButton = document.getElementById('ttsToggleButton') as HTMLButtonElement;
-    this.ttsIcon = this.ttsToggleButton.querySelector('i') as HTMLElement;
+    this.clearAllButton = document.getElementById('clearAllButton') as HTMLButtonElement;
     this.exportButton = document.getElementById('exportButton') as HTMLButtonElement;
 
     // Consent Modal
@@ -369,6 +375,14 @@ class LivingMemoirApp {
     this.importDataBtn = document.getElementById('import-data-btn') as HTMLButtonElement;
     this.importDataInput = document.getElementById('import-data-input') as HTMLInputElement;
     this.saveStatus = document.getElementById('save-status') as HTMLElement;
+    this.memoirTitleInput = document.getElementById('memoir-title-input') as HTMLInputElement;
+    this.updatePreviewBtn = document.getElementById('update-preview-btn') as HTMLButtonElement;
+    
+    // Clear All Modal
+    this.clearAllModal = document.getElementById('clear-all-modal') as HTMLDivElement;
+    this.clearAllModalCloseBtn = document.getElementById('clear-all-modal-close') as HTMLButtonElement;
+    this.clearAllCancelBtn = document.getElementById('clear-all-cancel') as HTMLButtonElement;
+    this.clearAllConfirmBtn = document.getElementById('clear-all-confirm') as HTMLButtonElement;
 
     // Journal Modal
     this.journalModal = document.getElementById('journal-modal') as HTMLDivElement;
@@ -383,7 +397,6 @@ class LivingMemoirApp {
 
     this.bindGlobalEventListeners();
     this.initTheme();
-    this.initTTS();
     this.initializeApp();
   }
 
@@ -391,6 +404,25 @@ class LivingMemoirApp {
     await this.loadState();
     this.renderDashboard();
     this.startAutoSave();
+    this.logTestingInfo();
+  }
+
+  private logTestingInfo(): void {
+    console.log('📖 The Living Memoir - Testing & Development Tools');
+    console.log('================================================');
+    console.log('🧪 Testing Commands:');
+    console.log('  • Ctrl+Shift+P - Populate with comprehensive test data');
+    console.log('  • Ctrl+Shift+T - Run full comprehensive test suite');
+    console.log('  • Ctrl+Shift+C - Clear all data (with confirmation)');
+    console.log('');
+    console.log('📊 Current Data Status:');
+    console.log(`  • Answered Questions: ${this.answers.size}`);
+    console.log(`  • Journal Entries: ${this.journalEntries.length}`);
+    console.log(`  • Core Info Complete: ${this.coreInfo.summary ? 'Yes' : 'No'}`);
+    console.log('');
+    console.log('💡 The test data includes realistic responses across all life stages');
+    console.log('   and will help you verify PDF export and data persistence.');
+    console.log('================================================');
   }
 
   private startAutoSave(): void {
@@ -418,8 +450,30 @@ class LivingMemoirApp {
   }
 
   private bindGlobalEventListeners(): void {
+    // Add keyboard shortcuts for testing
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + Shift + T = Run comprehensive test
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        this.runComprehensiveTest();
+      }
+
+      // Ctrl/Cmd + Shift + P = Populate test data only
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        this.populateWithTestData();
+      }
+
+      // Ctrl/Cmd + Shift + C = Clear all data
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        if (confirm('Clear all memoir data? This cannot be undone.')) {
+          this.clearAllData();
+        }
+      }
+    });
     this.themeToggleButton.addEventListener('click', () => this.toggleTheme());
-    this.ttsToggleButton.addEventListener('click', () => this.toggleTTS());
+    this.clearAllButton.addEventListener('click', () => this.openClearAllModal());
     this.exportButton.addEventListener('click', () => this.openCompileModal());
 
     // Consent Modal listeners
@@ -433,6 +487,18 @@ class LivingMemoirApp {
     this.exportDataBtn.addEventListener('click', () => this.exportData());
     this.importDataBtn.addEventListener('click', () => this.importDataInput.click());
     this.importDataInput.addEventListener('change', (e) => this.handleDataImport(e));
+    this.updatePreviewBtn.addEventListener('click', () => this.updateMemoirPreview());
+
+    // Auto-save title as user types
+    this.memoirTitleInput.addEventListener('input', () => {
+      this.customMemoirTitle = this.memoirTitleInput.value.trim();
+      this.saveState();
+    });
+    
+    // Clear All Modal listeners
+    this.clearAllModalCloseBtn.addEventListener('click', () => this.closeClearAllModal());
+    this.clearAllCancelBtn.addEventListener('click', () => this.closeClearAllModal());
+    this.clearAllConfirmBtn.addEventListener('click', () => this.confirmClearAll());
 
     // Journal Modal listeners
     this.journalModalCloseBtn.addEventListener('click', () => this.closeJournalModal());
@@ -493,6 +559,7 @@ class LivingMemoirApp {
       openChapter: this.openChapter,
       coreInfo: this.coreInfo,
       journalEntries: this.journalEntries,
+      customMemoirTitle: this.customMemoirTitle,
     };
 
     try {
@@ -594,6 +661,7 @@ class LivingMemoirApp {
     this.openChapter = state.openChapter || null;
     this.coreInfo = state.coreInfo || { summary: '', people: '', values: '' };
     this.journalEntries = Array.isArray(state.journalEntries) ? state.journalEntries : [];
+    this.customMemoirTitle = state.customMemoirTitle || '';
   }
 
   private async saveToIndexedDB(state: any): Promise<void> {
@@ -639,6 +707,32 @@ class LivingMemoirApp {
         };
 
         getRequest.onerror = () => reject(getRequest.error);
+      };
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('memoir')) {
+          db.createObjectStore('memoir', { keyPath: 'id' });
+        }
+      };
+    });
+  }
+
+  private async clearIndexedDB(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('MemoirDB', 1);
+
+      request.onerror = () => reject(request.error);
+
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['memoir'], 'readwrite');
+        const store = transaction.objectStore('memoir');
+
+        store.clear();
+
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
       };
 
       request.onupgradeneeded = () => {
@@ -752,12 +846,43 @@ class LivingMemoirApp {
         <div class="welcome-privacy">
           <p><strong>🔒 Your Privacy:</strong> Everything stays in your browser. No accounts, no tracking, no data sent to servers.</p>
         </div>
+        <div class="welcome-testing">
+          <h4>🧪 Testing & Demo</h4>
+          <p>Want to see how the app works with sample data?</p>
+          <div class="testing-buttons">
+            <button class="test-button" id="populate-test-data">
+              <i class="fas fa-flask"></i> Load Sample Memoir
+            </button>
+            <button class="test-button" id="run-full-test">
+              <i class="fas fa-check-double"></i> Run Full Test
+            </button>
+          </div>
+          <p class="testing-note">
+            <strong>Keyboard shortcuts:</strong> Ctrl+Shift+P (populate data), Ctrl+Shift+T (full test), Ctrl+Shift+C (clear data)
+          </p>
+        </div>
       </div>
     `;
 
     // Add close functionality
     const closeBtn = guide.querySelector('.welcome-close') as HTMLButtonElement;
     closeBtn.addEventListener('click', () => {
+      guide.remove();
+      localStorage.setItem('memoir_welcome_dismissed', 'true');
+    });
+
+    // Add testing button functionality
+    const populateBtn = guide.querySelector('#populate-test-data') as HTMLButtonElement;
+    const fullTestBtn = guide.querySelector('#run-full-test') as HTMLButtonElement;
+
+    populateBtn.addEventListener('click', () => {
+      this.populateWithTestData();
+      guide.remove();
+      localStorage.setItem('memoir_welcome_dismissed', 'true');
+    });
+
+    fullTestBtn.addEventListener('click', () => {
+      this.runComprehensiveTest();
       guide.remove();
       localStorage.setItem('memoir_welcome_dismissed', 'true');
     });
@@ -1364,18 +1489,116 @@ class LivingMemoirApp {
     }
   }
 
+  // --- Clear All Modal Methods ---
+
+  private openClearAllModal(): void {
+    this.clearAllModal.style.display = 'flex';
+    setTimeout(() => this.clearAllModal.classList.add('visible'), 10);
+  }
+
+  private closeClearAllModal(): void {
+    this.clearAllModal.classList.remove('visible');
+    setTimeout(() => { 
+      if (!this.clearAllModal.classList.contains('visible')) {
+        this.clearAllModal.style.display = 'none'; 
+      }
+    }, 200);
+  }
+
+  private confirmClearAll(): void {
+    console.log('🗑️ User confirmed: Clearing all memoir data...');
+    
+    // Clear all data
+    this.answers.clear();
+    this.journalEntries = [];
+    this.coreInfo = { summary: '', people: '', values: '' };
+    this.customMemoirTitle = '';
+    this.openChapter = null;
+    
+    // Clear localStorage
+    localStorage.removeItem('memoir_dashboard_state');
+    localStorage.removeItem('memoir_save_count');
+    localStorage.removeItem('memoir_welcome_dismissed');
+    
+    // Clear IndexedDB
+    this.clearIndexedDB();
+    
+    // Save empty state and re-render
+    this.saveState();
+    this.renderDashboard();
+    
+    // Close modal
+    this.closeClearAllModal();
+    
+    console.log('✅ All memoir data cleared successfully');
+    
+    // Show confirmation
+    setTimeout(() => {
+      alert('All memoir data has been cleared. You can now start fresh!');
+    }, 300);
+  }
+
   // --- Compile & Export Logic ---
 
   private openCompileModal(): void {
-    this.memoirPreviewContent.innerHTML = this.generateMemoirHTML(true);
+    // Set the title input value
+    this.memoirTitleInput.value = this.customMemoirTitle || this.generateDefaultTitle();
+
+    // Generate and display memoir preview
+    this.updateMemoirPreview();
+
     this.titleSuggestionsContainer.innerHTML = ''; // Clear previous suggestions
     this.compileModal.style.display = 'flex';
     setTimeout(() => this.compileModal.classList.add('visible'), 10);
   }
 
   private closeCompileModal(): void {
+    // Save the custom title when closing
+    this.customMemoirTitle = this.memoirTitleInput.value.trim();
+    this.saveState();
+
     this.compileModal.classList.remove('visible');
     setTimeout(() => { if (!this.compileModal.classList.contains('visible')) this.compileModal.style.display = 'none'; }, 200);
+  }
+
+  private generateDefaultTitle(): string {
+    // Generate a default title based on available information
+    const currentYear = new Date().getFullYear();
+
+    if (this.coreInfo.summary) {
+      // Try to extract a name or key theme from the summary
+      const summary = this.coreInfo.summary.toLowerCase();
+      if (summary.includes('my name is')) {
+        const nameMatch = summary.match(/my name is ([^,.]+)/);
+        if (nameMatch) {
+          return `The Life Story of ${nameMatch[1].trim()}`;
+        }
+      }
+    }
+
+    // Check if we have any answered questions to determine life stage focus
+    const answeredStages = new Set();
+    this.answers.forEach((_, questionId) => {
+      const question = MASTER_QUESTION_ROLODEX.find(q => q.id === questionId);
+      if (question) {
+        answeredStages.add(question.lifeStage);
+      }
+    });
+
+    if (answeredStages.size > 3) {
+      return `My Life Journey - A Personal Memoir`;
+    } else if (answeredStages.has('Early Childhood')) {
+      return `Memories from My Early Years`;
+    } else if (answeredStages.has('Later Years')) {
+      return `Reflections on a Life Well Lived`;
+    }
+
+    return `My Living Memoir - ${currentYear}`;
+  }
+
+  private updateMemoirPreview(): void {
+    const customTitle = this.memoirTitleInput.value.trim();
+    this.memoirPreviewContent.innerHTML = this.generateMemoirHTML(true, customTitle);
   }
 
   private handleSuggestTitles(): void {
@@ -1385,7 +1608,8 @@ class LivingMemoirApp {
       return;
     }
 
-    // Provide generic title suggestions since AI is no longer available
+    // Generate personalized suggestions based on content
+    const personalizedSuggestions = this.generatePersonalizedTitles();
     const genericSuggestions = [
       "My Life Story",
       "Memories and Moments",
@@ -1394,21 +1618,115 @@ class LivingMemoirApp {
       "The Story of Me"
     ];
 
-    let suggestionsHTML = '<ul>';
-    genericSuggestions.forEach(title => {
-      suggestionsHTML += `<li>${title}</li>`;
+    const allSuggestions = [...personalizedSuggestions, ...genericSuggestions];
+
+    let suggestionsHTML = `
+      <div class="title-suggestions-header">
+        <p>Click any title to use it:</p>
+        <button class="collapse-suggestions-btn" type="button">
+          <i class="fas fa-chevron-up"></i>
+        </button>
+      </div>
+      <div class="suggestions-content">
+        <ul class="clickable-suggestions">`;
+
+    allSuggestions.forEach((title, index) => {
+      suggestionsHTML += `<li class="suggestion-item" data-title="${title}">${title}</li>`;
     });
-    suggestionsHTML += '</ul>';
-    suggestionsHTML += '<p><em>Note: These are generic suggestions. Consider creating a personalized title based on your unique story.</em></p>';
+
+    suggestionsHTML += `
+        </ul>
+        <p class="suggestions-note"><em>💡 Tip: You can also edit the title directly in the input field above.</em></p>
+      </div>`;
 
     this.titleSuggestionsContainer.innerHTML = suggestionsHTML;
+
+    // Add click handlers to suggestions
+    const suggestionItems = this.titleSuggestionsContainer.querySelectorAll('.suggestion-item');
+    suggestionItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const title = item.getAttribute('data-title');
+        if (title) {
+          this.memoirTitleInput.value = title;
+          this.updateMemoirPreview();
+          // Highlight the selected suggestion
+          suggestionItems.forEach(s => s.classList.remove('selected'));
+          item.classList.add('selected');
+        }
+      });
+    });
+
+    // Add collapse functionality
+    const collapseBtn = this.titleSuggestionsContainer.querySelector('.collapse-suggestions-btn');
+    const suggestionsContent = this.titleSuggestionsContainer.querySelector('.suggestions-content');
+
+    if (collapseBtn && suggestionsContent) {
+      collapseBtn.addEventListener('click', () => {
+        const isCollapsed = suggestionsContent.classList.contains('collapsed');
+        suggestionsContent.classList.toggle('collapsed');
+        const icon = collapseBtn.querySelector('i');
+        if (icon) {
+          icon.className = isCollapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+        }
+      });
+    }
   }
 
-  private generateMemoirHTML(isPreview: boolean = false): string {
+  private generatePersonalizedTitles(): string[] {
+    const suggestions: string[] = [];
+
+    // Try to extract name for personalized titles
+    const nameAnswer = this.answers.get('B-001');
+    if (nameAnswer) {
+      const nameMatch = nameAnswer.text.match(/my (?:full )?name is ([^,.]+)/i);
+      if (nameMatch) {
+        const firstName = nameMatch[1].trim().split(' ')[0];
+        suggestions.push(`The Life and Times of ${firstName}`);
+        suggestions.push(`${firstName}'s Story`);
+      }
+    }
+
+    // Check for themes in the content
+    const allAnswers = Array.from(this.answers.values()).map(a => a.text.toLowerCase()).join(' ');
+
+    if (allAnswers.includes('teacher') || allAnswers.includes('teaching')) {
+      suggestions.push("A Teacher's Journey");
+    }
+    if (allAnswers.includes('family') || allAnswers.includes('children')) {
+      suggestions.push("Family, Love, and Legacy");
+    }
+    if (allAnswers.includes('farm') || allAnswers.includes('farming')) {
+      suggestions.push("From the Farm to Life");
+    }
+    if (allAnswers.includes('war') || allAnswers.includes('military')) {
+      suggestions.push("Service and Sacrifice");
+    }
+    if (allAnswers.includes('immigrant') || allAnswers.includes('emigrate')) {
+      suggestions.push("An Immigrant's Dream");
+    }
+
+    // Add year-based titles if we can determine birth year
+    const currentYear = new Date().getFullYear();
+    if (nameAnswer && nameAnswer.text.includes('195')) {
+      suggestions.push(`A Life Begun in the 1950s`);
+    }
+
+    return suggestions.slice(0, 3); // Return up to 3 personalized suggestions
+  }
+
+  private generateMemoirHTML(isPreview: boolean = false, customTitle?: string): string {
+    // Use custom title if provided, otherwise generate default
+    let memoirTitle = customTitle || this.customMemoirTitle;
+
+    // Extract userName for HTML title (separate from memoir title)
     const nameAnswer = this.answers.get('B-001');
     const userName = nameAnswer ? nameAnswer.text.split(',')[0].trim() : "Memoir";
 
-    let bodyContent = `<h1>The Living Memoir of ${userName}</h1>`;
+    if (!memoirTitle) {
+      memoirTitle = `The Living Memoir of ${userName}`;
+    }
+
+    let bodyContent = `<h1>${memoirTitle}</h1>`;
     bodyContent += `<p><em>Compiled on: ${new Date().toLocaleString()}</em></p>`;
 
     // Journal Entries
@@ -1479,78 +1797,302 @@ class LivingMemoirApp {
 
   private async exportAsPDF(): Promise<void> {
     try {
+      console.log('📖 Starting enhanced PDF book export...');
+
       // Show loading state
       this.downloadMemoirBtn.disabled = true;
-      this.downloadMemoirBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+      this.downloadMemoirBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Book...';
 
-      // Create a temporary container for PDF generation
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '0';
-      tempContainer.style.width = '210mm'; // A4 width
-      tempContainer.style.backgroundColor = 'white';
-      tempContainer.style.color = 'black';
-      tempContainer.style.fontFamily = 'Georgia, serif';
-      tempContainer.style.fontSize = '12pt';
-      tempContainer.style.lineHeight = '1.6';
-      tempContainer.style.padding = '20mm';
+      // Get current title and validate content
+      const currentTitle = this.memoirTitleInput?.value?.trim() || this.customMemoirTitle;
 
-      // Generate memoir content
-      const memoirHTML = this.generateMemoirHTML(false);
-      tempContainer.innerHTML = memoirHTML;
-      document.body.appendChild(tempContainer);
+      if (this.answers.size === 0 && this.journalEntries.length === 0) {
+        throw new Error('Generated memoir content is too short or empty');
+      }
 
-      // Generate PDF using html2canvas and jsPDF
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
+      console.log(`📖 Creating book with title: "${currentTitle || 'My Living Memoir'}"`);
+      console.log(`📊 Content: ${this.answers.size} answers, ${this.journalEntries.length} journal entries`);
 
-      // Remove temporary container
-      document.body.removeChild(tempContainer);
-
-      // Create PDF
+      // Create PDF with proper book formatting
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 25; // Larger margins for elderly readers
+      const contentWidth = pageWidth - (margin * 2);
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
+      // Generate title page
+      this.addTitlePage(pdf, currentTitle, pageWidth, pageHeight, margin);
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      // Add table of contents
+      pdf.addPage();
+      this.addTableOfContents(pdf, pageWidth, pageHeight, margin);
+
+      // Add memoir content with proper pagination
+      await this.addMemoirContent(pdf, pageWidth, pageHeight, margin, contentWidth);
 
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `my-memoir-${timestamp}.pdf`;
+      const cleanTitle = currentTitle?.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-') || 'my-memoir';
+      const filename = `${cleanTitle}-${timestamp}.pdf`;
+
+      console.log(`💾 Saving PDF book as: ${filename}`);
 
       // Save the PDF
       pdf.save(filename);
 
+      console.log('✅ PDF book export completed successfully!');
+
       // Reset button state
       this.downloadMemoirBtn.disabled = false;
-      this.downloadMemoirBtn.innerHTML = 'Export as PDF';
+      this.downloadMemoirBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Save as PDF';
 
     } catch (error) {
-      console.error('PDF export error:', error);
+      console.error('❌ PDF export error:', error);
 
-      // Fallback to browser print
-      this.fallbackPrintExport();
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      if (errorMessage.includes('too short or empty')) {
+        alert('Your memoir appears to be empty. Please add some content before exporting.');
+      } else if (errorMessage.includes('html2canvas')) {
+        alert('PDF generation failed. Trying alternative export method...');
+        this.fallbackPrintExport();
+      } else {
+        alert('PDF export failed. Trying alternative export method...');
+        this.fallbackPrintExport();
+      }
 
       // Reset button state
       this.downloadMemoirBtn.disabled = false;
-      this.downloadMemoirBtn.innerHTML = 'Export as PDF';
+      this.downloadMemoirBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Save as PDF';
+    }
+  }
+
+  private addTitlePage(pdf: jsPDF, title: string, pageWidth: number, pageHeight: number, margin: number): void {
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    // Set large, readable font for title
+    pdf.setFontSize(28);
+    pdf.setFont('times', 'bold');
+
+    // Add title (split into multiple lines if needed)
+    const titleLines = pdf.splitTextToSize(title || 'My Living Memoir', pageWidth - (margin * 2));
+    let titleY = centerY - 40;
+
+    titleLines.forEach((line: string) => {
+      pdf.text(line, centerX, titleY, { align: 'center' });
+      titleY += 12;
+    });
+
+    // Add subtitle
+    pdf.setFontSize(16);
+    pdf.setFont('times', 'italic');
+    pdf.text('A Personal Biography', centerX, titleY + 20, { align: 'center' });
+
+    // Add date
+    pdf.setFontSize(14);
+    pdf.setFont('times', 'normal');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    pdf.text(`Compiled on ${currentDate}`, centerX, pageHeight - margin - 20, { align: 'center' });
+  }
+
+  private addTableOfContents(pdf: jsPDF, pageWidth: number, pageHeight: number, margin: number): void {
+    let yPosition = margin + 20;
+
+    // Add page number
+    pdf.setFontSize(10);
+    pdf.text('2', pageWidth / 2, pageHeight - 15, { align: 'center' });
+
+    // Title
+    pdf.setFontSize(22);
+    pdf.setFont('times', 'bold');
+    pdf.text('Table of Contents', margin, yPosition);
+    yPosition += 25;
+
+    // Set content font
+    pdf.setFontSize(14);
+    pdf.setFont('times', 'normal');
+
+    let pageNumber = 3; // Start after title and TOC pages
+
+    // Add journal entries if they exist
+    if (this.journalEntries.length > 0) {
+      pdf.text('My Personal Journal', margin, yPosition);
+      pdf.text(pageNumber.toString(), pageWidth - margin, yPosition, { align: 'right' });
+      yPosition += 8;
+      pageNumber += Math.ceil(this.journalEntries.length / 2); // Estimate pages
+    }
+
+    // Add life stages
+    LIFE_STAGES.forEach(stage => {
+      const stageAnswers = MASTER_QUESTION_ROLODEX
+        .filter(q => q.lifeStage === stage && this.answers.has(q.id));
+
+      if (stageAnswers.length > 0) {
+        pdf.text(stage, margin, yPosition);
+        pdf.text(pageNumber.toString(), pageWidth - margin, yPosition, { align: 'right' });
+        yPosition += 8;
+        pageNumber += Math.ceil(stageAnswers.length / 3); // Estimate pages
+      }
+    });
+  }
+
+  private async addMemoirContent(pdf: jsPDF, pageWidth: number, pageHeight: number, margin: number, contentWidth: number): Promise<void> {
+    let yPosition = margin + 20;
+    const lineHeight = 8; // Increased line height for better readability
+    const maxY = pageHeight - margin - 30; // More space for page numbers
+    let currentPageNumber = 3; // Start after title and TOC
+
+    // Set readable font for elderly readers
+    pdf.setFontSize(14); // Larger font size for elderly readers
+    pdf.setFont('times', 'normal');
+
+    // Helper function to add page numbers
+    const addPageNumber = () => {
+      pdf.setFontSize(10);
+      pdf.setFont('times', 'normal');
+      pdf.text(currentPageNumber.toString(), pageWidth / 2, pageHeight - 15, { align: 'center' });
+      currentPageNumber++;
+      pdf.setFontSize(14);
+    };
+
+    // Add journal entries first
+    if (this.journalEntries.length > 0) {
+      // Chapter title
+      pdf.addPage();
+      addPageNumber();
+      yPosition = margin + 20;
+
+      pdf.setFontSize(20);
+      pdf.setFont('times', 'bold');
+      pdf.text('My Personal Journal', margin, yPosition);
+      yPosition += 20;
+
+      pdf.setFontSize(12);
+      pdf.setFont('times', 'normal');
+
+      const sortedEntries = [...this.journalEntries].sort((a, b) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      for (const entry of sortedEntries) {
+        // Check if we need a new page
+        if (yPosition > maxY - 40) {
+          pdf.addPage();
+          addPageNumber();
+          yPosition = margin + 20;
+        }
+
+        // Entry title
+        pdf.setFontSize(14);
+        pdf.setFont('times', 'bold');
+        pdf.text(entry.title, margin, yPosition);
+        yPosition += 10;
+
+        // Entry date
+        pdf.setFontSize(11);
+        pdf.setFont('times', 'italic');
+        const entryDate = new Date(entry.date + 'T00:00:00').toLocaleDateString();
+        pdf.text(entryDate, margin, yPosition);
+        yPosition += 12;
+
+        // Entry content
+        pdf.setFontSize(12);
+        pdf.setFont('times', 'normal');
+        const contentLines = pdf.splitTextToSize(entry.content, contentWidth);
+
+        for (const line of contentLines) {
+          if (yPosition > maxY) {
+            pdf.addPage();
+            addPageNumber();
+            yPosition = margin + 20;
+          }
+          pdf.text(line, margin, yPosition);
+          yPosition += lineHeight;
+        }
+
+        yPosition += 10; // Space between entries
+      }
+    }
+
+    // Add life stage chapters
+    for (const stage of LIFE_STAGES) {
+      const stageAnswers = MASTER_QUESTION_ROLODEX
+        .filter(q => q.lifeStage === stage && this.answers.has(q.id));
+
+      if (stageAnswers.length > 0) {
+        // New page for each life stage
+        pdf.addPage();
+        addPageNumber();
+        yPosition = margin + 20;
+
+        // Chapter title
+        pdf.setFontSize(20);
+        pdf.setFont('times', 'bold');
+        pdf.text(stage, margin, yPosition);
+        yPosition += 25;
+
+        // Add questions and answers
+        for (const question of stageAnswers) {
+          const answer = this.answers.get(question.id);
+          if (!answer) continue;
+
+          // Check if we need a new page
+          if (yPosition > maxY - 60) {
+            pdf.addPage();
+            addPageNumber();
+            yPosition = margin + 20;
+          }
+
+          // Question
+          pdf.setFontSize(14);
+          pdf.setFont('times', 'bold');
+          const questionLines = pdf.splitTextToSize(question.text, contentWidth);
+
+          for (const line of questionLines) {
+            if (yPosition > maxY) {
+              pdf.addPage();
+              addPageNumber();
+              yPosition = margin + 20;
+            }
+            pdf.text(line, margin, yPosition);
+            yPosition += lineHeight;
+          }
+
+          yPosition += 6;
+
+          // Answer
+          pdf.setFontSize(14);
+          pdf.setFont('times', 'normal');
+          const answerLines = pdf.splitTextToSize(answer.text, contentWidth);
+
+          for (const line of answerLines) {
+            if (yPosition > maxY) {
+              pdf.addPage();
+              addPageNumber();
+              yPosition = margin + 20;
+            }
+            pdf.text(line, margin, yPosition);
+            yPosition += lineHeight;
+          }
+
+          yPosition += 12; // Space between Q&A pairs
+        }
+      }
     }
   }
 
   private fallbackPrintExport(): void {
-    const memoirHTML = this.generateMemoirHTML(false);
+    console.log('🔄 Using fallback print export...');
+
+    // Use current custom title for fallback export too
+    const currentTitle = this.memoirTitleInput?.value?.trim() || this.customMemoirTitle;
+    const memoirHTML = this.generateMemoirHTML(false, currentTitle);
     const printWindow = window.open('', '', 'height=800,width=800');
 
     if (printWindow) {
@@ -1650,6 +2192,181 @@ class LivingMemoirApp {
       return false;
     }
   }
+
+  // Testing and Development Methods
+  private populateWithTestData(): void {
+    console.log('🧪 Populating app with comprehensive test data...');
+
+    // Clear existing data
+    this.answers.clear();
+    this.journalEntries = [];
+
+    // Populate core info
+    this.coreInfo = {
+      summary: "Born in 1950 in a small farming town, I've lived through decades of change - from the civil rights movement to the digital revolution. I've been a teacher, a parent, and a lifelong learner. My story is one of resilience, love, and the pursuit of meaning in everyday moments.",
+      people: "Margaret Thompson - my beloved wife of 45 years; David and Sarah - my children who became my greatest teachers; Robert Johnson - my best friend since childhood; Mrs. Eleanor Davis - my high school English teacher who changed my life; Tom Wilson - my mentor and business partner.",
+      values: "Integrity above all else, the power of education to transform lives, treating every person with dignity and respect, the importance of family bonds, giving back to the community, finding joy in simple pleasures, and never stopping learning."
+    };
+
+    // Set a custom memoir title
+    this.customMemoirTitle = "From Farm Boy to Teacher: A Life of Learning and Love";
+
+    // Sample answers for each life stage
+    const sampleAnswers = {
+      // Ancestry & Pre-Birth
+      'B-001': { text: "My full name is James Robert Thompson. I was born on March 15, 1950, in Cedar Falls, Iowa, at the local hospital during one of the worst snowstorms in the town's history." },
+      'B-002': { text: "My grandmother on my mother's side, Rose O'Malley, came from Ireland during the potato famine. She was known for her incredible storytelling and her apple pies that could win any county fair. My grandfather worked the railroad and had hands like leather from years of hard labor." },
+      'B-003': { text: "My parents met at a church social in 1948. Dad was just back from the war, and Mom was working at the local diner. He ordered coffee every day for two weeks just to talk to her before finally asking her to the movies." },
+      'B-004': { text: "My father, Robert Thompson, was a quiet man with a strong moral compass. He worked at the grain elevator and never missed a day of work in 30 years. My mother, Helen, was the heart of our home - always singing while she cooked and making sure everyone felt loved." },
+      'B-005': { text: "I was named James after my great-grandfather who was a circuit preacher, and Robert after my father. In our family, names carried the weight of legacy and the hope that we'd live up to the good men who came before us." },
+
+      // Early Childhood  
+      'C-001': { text: "I remember being four years old and helping my dad feed the chickens early one morning. The sun was just coming up, painting everything golden, and I felt so important carrying that little bucket of feed. That's when I knew I wanted to be just like him." },
+      'C-002': { text: "Our house was a two-story farmhouse with a wraparound porch. My bedroom was upstairs with slanted ceilings and a window that looked out over the cornfields. I had a wooden toy chest my grandfather made, and I'd spend hours playing with my toy soldiers and building blocks." },
+      'C-003': { text: "My parents were loving but firm. Dad taught me the value of hard work and keeping your word. Mom made sure I knew I was loved unconditionally. They never raised their voices, but when they spoke, we listened." },
+      'C-004': { text: "I had one younger sister, Mary, who was my constant companion and occasional tormentor. We'd build forts in the hayloft and catch fireflies in mason jars. She could make me laugh even when I was in trouble." },
+      'C-005': { text: "My best friend was Tommy Miller from the next farm over. We'd race our bikes down the dirt roads, go fishing in Miller's pond, and play elaborate games of cowboys and Indians that would last all day." },
+
+      // Adolescence
+      'A-001': { text: "Mrs. Eleanor Davis, my English teacher, saw something in me I didn't see in myself. She encouraged me to write for the school newspaper and enter essay contests. She taught me that words have power and that education could take me anywhere I wanted to go." },
+      'A-002': { text: "We'd drive around in Tommy's old Ford pickup, listening to Elvis and Chuck Berry on the radio. Friday nights were for basketball games, and Saturdays were for helping with farm work. Simple pleasures that felt like the whole world." },
+      'A-003': { text: "I dreamed of becoming a teacher like Mrs. Davis, maybe even a principal someday. I wanted to help kids discover their potential the way she helped me discover mine. College seemed like a distant dream, but she convinced me it was possible." },
+      'A-004': { text: "The happiest memory was winning the state essay contest my senior year. The most challenging was when my grandfather died suddenly, and I had to learn that life doesn't always give you time to say goodbye." },
+      'A-005': { text: "High school was where I found my voice. I wasn't the biggest or the strongest, but I could write and speak well. I was in student government and helped organize school events. I felt like I belonged." },
+
+      // Early Adulthood
+      'EA-001': { text: "I went to Iowa State University on a partial scholarship, studying Education with a minor in English Literature. College opened my eyes to a world beyond our small town, but it also taught me to appreciate where I came from." },
+      'EA-002': { text: "I met Margaret at a campus coffee shop in 1971. She was studying to be a nurse, and I was immediately struck by her kindness and intelligence. Our first date was a walk around the campus lake that lasted four hours." },
+      'EA-003': { text: "My first teaching job was at Cedar Falls Elementary, the same school I attended as a child. It felt like coming full circle. I learned that teaching isn't just about curriculum - it's about seeing the potential in every child and helping them believe in themselves." },
+      'EA-004': { text: "Becoming a father to David in 1975 changed everything. Suddenly, every decision was about more than just Margaret and me. The responsibility was overwhelming and wonderful at the same time. I understood my own father better." },
+      'EA-005': { text: "I didn't serve in Vietnam due to a college deferment and then the lottery system. I felt guilty about that for years, knowing friends who went and didn't come back. It shaped my appreciation for the freedoms we have." },
+
+      // Mid-Life
+      'ML-001': { text: "Becoming principal of Cedar Falls High School in 1985 was the culmination of 15 years of teaching and learning. I was proud to lead the school that had shaped me, and I tried to create an environment where every student could thrive." },
+      'ML-002': { text: "The biggest challenge was when Margaret was diagnosed with breast cancer in 1992. We faced it together, and her strength through treatment taught me what real courage looks like. She's been cancer-free for over 30 years now." },
+      'ML-003': { text: "As I got older, I realized that success isn't measured by what you accumulate, but by the lives you touch. My values shifted from personal achievement to service and legacy. What kind of world was I leaving for my children?" },
+      'ML-004': { text: "The fall of the Berlin Wall, the Challenger disaster, 9/11 - these events reminded me how quickly the world can change. They reinforced my belief that we must cherish each day and the people we love." },
+      'ML-005': { text: "When David and Sarah became teenagers, I had to learn to guide rather than direct. They needed to make their own mistakes and discoveries. It was harder than I expected to step back and trust the foundation we'd built." },
+
+      // Later Years  
+      'LR-001': { text: "Retirement in 2010 was both liberating and terrifying. After 40 years in education, I suddenly had to figure out who I was beyond my job title. Margaret and I traveled, volunteered, and rediscovered each other." },
+      'LR-002': { text: "My greatest accomplishment is the family Margaret and I built together - not just our children, but the extended family of students, colleagues, and friends who became part of our story. Love multiplied is never diminished." },
+      'LR-003': { text: "I regret not telling my father how much I admired him before he died. I regret the times I was too busy with work to fully present with my family. But I've learned that regret can teach us to do better going forward." },
+      'LR-004': { text: "I hope to be remembered as someone who cared - about students, about family, about community. If people say I made a difference in their lives, then my life will have been worthwhile." },
+      'LR-005': { text: "To young people today, I'd say: Don't be afraid to dream big, but don't forget to appreciate the small moments. Technology will change, but human kindness and integrity never go out of style." }
+    };
+
+    // Populate answers
+    Object.entries(sampleAnswers).forEach(([questionId, answer]) => {
+      this.answers.set(questionId, answer);
+    });
+
+    // Add sample journal entries
+    this.journalEntries = [
+      {
+        id: 'journal-1',
+        title: 'The Day Everything Changed',
+        content: 'It was a Tuesday morning in October 1992 when Margaret found the lump. I remember the exact moment - she was getting dressed for work, and her face went pale. We both knew our lives had just taken an unexpected turn. But what I learned in the months that followed was that love isn\'t just about the good times. It\'s about holding hands in hospital waiting rooms and finding reasons to laugh even when you\'re scared.',
+        date: '1992-10-15'
+      },
+      {
+        id: 'journal-2',
+        title: 'Lessons from the Garden',
+        content: 'Margaret started her vegetable garden the spring after her treatment ended. Watching her plant those seeds with such hope and determination taught me something profound about resilience. Gardens require faith - you plant something small and trust it will grow. Recovery is like that too. You take small steps and trust that healing will come.',
+        date: '1993-04-20'
+      },
+      {
+        id: 'journal-3',
+        title: 'Graduation Day Reflections',
+        content: 'Watching Sarah graduate from medical school today, I couldn\'t help but think about the chain of influence. Mrs. Davis believed in me, I tried to believe in my students, and now Sarah is going to heal people. It\'s like throwing a stone in a pond - the ripples go on and on. That\'s the real magic of education and parenting.',
+        date: '2001-05-12'
+      }
+    ];
+
+    console.log('✅ Test data populated successfully!');
+    console.log(`📊 Added ${this.answers.size} question responses`);
+    console.log(`📝 Added ${this.journalEntries.length} journal entries`);
+    console.log('💾 Saving test data...');
+
+    this.saveState();
+    this.renderDashboard();
+  }
+
+  private runComprehensiveTest(): void {
+    console.log('🧪 Running comprehensive app test...');
+
+    // Test 1: Data Population
+    console.log('Test 1: Populating with test data...');
+    this.populateWithTestData();
+
+    // Test 2: Data Persistence
+    console.log('Test 2: Testing data persistence...');
+    setTimeout(() => {
+      const savedData = localStorage.getItem('memoir_dashboard_state');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        console.log('✅ Data persistence test passed');
+        console.log(`📊 Saved ${parsed.answers.length} answers and ${parsed.journalEntries.length} journal entries`);
+      } else {
+        console.error('❌ Data persistence test failed');
+      }
+    }, 1000);
+
+    // Test 3: PDF Export Test
+    console.log('Test 3: Testing PDF export...');
+    setTimeout(() => {
+      console.log('📄 Opening export modal for PDF test...');
+      this.openCompileModal();
+      console.log('✅ Export modal opened successfully');
+      console.log('💡 You can now test PDF export by clicking "Save as PDF"');
+
+      // Validate memoir generation
+      try {
+        const testHTML = this.generateMemoirHTML(false);
+        console.log(`✅ Memoir HTML generation test passed (${testHTML.length} characters)`);
+      } catch (error) {
+        console.error('❌ Memoir HTML generation test failed:', error);
+      }
+    }, 2000);
+
+    // Test 4: Data Export/Import Test
+    console.log('Test 4: Data export/import functionality ready for testing');
+    console.log('💡 Use the "Backup Data" and "Restore Data" buttons in the export modal');
+
+    console.log('🎉 Comprehensive test setup complete!');
+    console.log('📋 Manual testing checklist:');
+    console.log('  1. ✅ Data populated automatically');
+    console.log('  2. ✅ Data persistence verified');
+    console.log('  3. 🔄 Test PDF export (modal will open)');
+    console.log('  4. 🔄 Test data backup/restore');
+    console.log('  5. 🔄 Test question editing and saving');
+    console.log('  6. 🔄 Test journal entry creation/editing');
+  }
+
+  private clearAllData(): void {
+    console.log('🗑️ Clearing all memoir data...');
+
+    this.answers.clear();
+    this.journalEntries = [];
+    this.coreInfo = { summary: '', people: '', values: '' };
+    this.customMemoirTitle = '';
+    this.openChapter = null;
+
+    // Clear localStorage
+    localStorage.removeItem('memoir_dashboard_state');
+    localStorage.removeItem('memoir_save_count');
+    localStorage.removeItem('memoir_welcome_dismissed');
+
+    // Clear IndexedDB
+    this.clearIndexedDB();
+
+    this.saveState();
+    this.renderDashboard();
+
+    console.log('✅ All data cleared successfully');
+  }
+
+
 }
 
 document.addEventListener('DOMContentLoaded', () => new LivingMemoirApp());

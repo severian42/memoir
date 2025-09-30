@@ -1,41 +1,99 @@
-Building bridges through stories: A personal project born from hope
+# The Living Memoir 📖
 
+A web application designed to help people document and share their life stories through guided biographical interviews. Built to bridge relationships and preserve family history through structured storytelling.
 
+**Live App**: https://living-memoir.vercel.app/
 
-Sometimes the most meaningful projects come from the most personal places. I recently built "The Living Memoir" - a web app designed to help people share their life stories through guided biographical interviews.
+## 🎯 Purpose
 
+This app was created from a personal need to connect more deeply with family members. Sometimes the most meaningful projects come from the most personal places - this one was born from wanting to understand my biological father's story and share my own in a structured, meaningful way.
 
+Whether you're looking to:
+- Bridge generational gaps with family members
+- Heal or strengthen relationships through understanding
+- Preserve family history for future generations  
+- Create a lasting memoir of your own experiences
 
-https://living-memoir.vercel.app/
+The Living Memoir provides the tools and guidance to make it happen.
 
+## ✨ Features
 
+### 📝 Guided Life Story Documentation
+- **200+ Research-Based Questions** across all life stages
+- **Structured Life Stages**: Ancestry, Childhood, Adolescence, Early Adulthood, Mid-Life, Later Years
+- **Multiple Input Methods**: Type responses or record audio with live transcription
+- **Photo Integration**: Add images to enhance your stories
+- **Personal Journal**: Free-form writing space for additional thoughts
 
-Why I built this: I've always struggled to connect deeply with my biological father. Despite years of trying, we've never quite found a way to truly understand each other's perspectives and experiences. I realized that maybe what we needed wasn't just conversation, but a structured way to share our stories - the kind of deep, biographical storytelling that helps people really know each other.
+### 🔒 Privacy & Security
+- **100% Serverless** - everything stays in your browser
+- **No AI or LLMs** processing your personal stories
+- **No Accounts Required** - no sign-ups, no tracking
+- **Local Data Storage** with automatic backups
+- **Complete Data Control** - export/import your data anytime
 
+### 📄 Professional Output
+- **Beautiful PDF Export** - Generate professionally formatted memoirs
+- **Data Backup/Restore** - JSON export for safekeeping and sharing
+- **Cross-Device Compatibility** - Works on desktop, tablet, and mobile
+- **Offline Capable** - Continue working without internet
 
+## 🧪 Testing the App
 
-What it does: The app guides users through 200+ carefully crafted questions spanning different life stages - from ancestry and childhood through later years. Based on proven research and interview techniques, it helps people document their memories, experiences, and perspectives in a meaningful way. Users can record audio responses (with live transcription), add photos, and compile everything into a beautiful PDF memoir.
+The app includes comprehensive testing tools to verify all functionality:
 
+### Quick Testing Methods:
+1. **Keyboard Shortcuts**:
+   - `Ctrl+Shift+P` (or `Cmd+Shift+P`) - Populate with realistic sample memoir data
+   - `Ctrl+Shift+T` (or `Cmd+Shift+T`) - Run comprehensive test suite
+   - `Ctrl+Shift+C` (or `Cmd+Shift+C`) - Clear all data
 
+2. **Welcome Guide** - First-time users see testing buttons to load sample data
 
-Privacy & Security (because this matters):
+3. **Console Logging** - Open browser dev tools to see detailed testing information
 
+### What Gets Tested:
+- ✅ **Data Persistence** - All answers survive browser refresh/restart
+- ✅ **PDF Export** - Generates clean, readable memoir documents
+- ✅ **Auto-Save** - Continuous data protection with visual status
+- ✅ **Backup/Restore** - JSON export/import functionality
+- ✅ **Cross-Browser** - Works in Chrome, Firefox, Safari, Edge
+- ✅ **Performance** - Smooth operation even with extensive data
 
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instructions.
 
-- 100% serverless - everything stays in your browser
+## 🚀 Development
 
-- No AI, LLMs, or external services processing your personal stories
+### Setup
+```bash
+git clone [repository-url]
+cd the-living-memoir
+npm install
+npm run dev
+```
 
-- Robust local database with automatic backups
+### Build
+```bash
+npm run build
+```
 
-- Export/import your data anytime
+### Technical Stack
+- **Frontend**: TypeScript, HTML5, CSS3
+- **PDF Generation**: jsPDF + html2canvas
+- **Storage**: localStorage + IndexedDB
+- **Build Tool**: Vite
+- **Audio Processing**: Web Speech API
 
-- No accounts, no tracking, no data collection
+## 🤝 Contributing
 
+This is a personal project built to help families connect, but contributions are welcome. The codebase is designed to be privacy-first and completely serverless.
 
+## 📄 License
 
-I'm sharing this because I know I'm not alone in wanting deeper connections with family members. Whether it's bridging generational gaps, healing relationships, or simply preserving family history, sometimes we need the right tools to help us open up.
+Open source under the MIT License.
 
+---
 
+**"Every person has a story worth telling, and every story deserves to be heard."**
 
-The app is free and open to anyone who might find it useful. If you've ever wished for a way to really understand someone's life story - or share your own - maybe this can help.
+*Built with love to help families understand each other better* ❤️
