@@ -4,7 +4,7 @@
 */
 /* tslint:disable */
 
-import {GoogleGenAI, Chat} from '@google/genai';
+import {GoogleGenAI} from '@google/genai';
 
 const MODEL_NAME = 'gemini-2.5-flash';
 
@@ -321,14 +321,6 @@ class LivingMemoirApp {
   private journalDeleteBtn: HTMLButtonElement;
 
 
-  // Chatbot UI
-  private chatFab: HTMLButtonElement;
-  private chatModal: HTMLDivElement;
-  private chatCloseBtn: HTMLButtonElement;
-  private chatMessages: HTMLDivElement;
-  private chatInput: HTMLTextAreaElement;
-  private chatSendBtn: HTMLButtonElement;
-
   // App State
   private answers: Map<string, Answer> = new Map();
   private coreInfo: CoreInfo = { summary: '', people: '', values: '' };
@@ -342,9 +334,6 @@ class LivingMemoirApp {
   private audioChunks: Blob[] = [];
   private isRecording = false;
   private stream: MediaStream | null = null;
-
-  // Chat State
-  private chat: Chat | null = null;
 
   constructor() {
     this.genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -382,15 +371,6 @@ class LivingMemoirApp {
     this.journalContentInput = document.getElementById('journal-content') as HTMLTextAreaElement;
     this.journalDeleteBtn = document.getElementById('journal-delete-btn') as HTMLButtonElement;
 
-
-    // Chatbot UI
-    this.chatFab = document.getElementById('chat-fab') as HTMLButtonElement;
-    this.chatModal = document.getElementById('chat-modal') as HTMLDivElement;
-    this.chatCloseBtn = document.getElementById('chat-close-btn') as HTMLButtonElement;
-    this.chatMessages = document.getElementById('chat-messages') as HTMLDivElement;
-    this.chatInput = document.getElementById('chat-input') as HTMLTextAreaElement;
-    this.chatSendBtn = document.getElementById('chat-send-btn') as HTMLButtonElement;
-
     this.bindGlobalEventListeners();
     this.initTheme();
     this.initTTS();
@@ -416,17 +396,6 @@ class LivingMemoirApp {
     this.journalModalCloseBtn.addEventListener('click', () => this.closeJournalModal());
     this.journalForm.addEventListener('submit', (e) => this.handleSaveJournalEntry(e));
     this.journalDeleteBtn.addEventListener('click', () => this.handleDeleteJournalEntry());
-
-    // Chatbot listeners
-    this.chatFab.addEventListener('click', () => this.toggleChat(true));
-    this.chatCloseBtn.addEventListener('click', () => this.toggleChat(false));
-    this.chatSendBtn.addEventListener('click', () => this.handleSendMessage());
-    this.chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            this.handleSendMessage();
-        }
-    });
   }
 
   private initTheme(): void {
@@ -563,9 +532,6 @@ class LivingMemoirApp {
         statusEl.textContent = 'Saved!';
         statusEl.style.opacity = '1';
         setTimeout(() => { statusEl.style.opacity = '0' }, 2000);
-        
-        // If chat is active, reset it to use new context
-        this.chat = null; 
     });
 
     return container;
@@ -1184,83 +1150,6 @@ ${memoirText}
     } else {
         alert('Please allow pop-ups for this website to export your memoir as a PDF.');
     }
-  }
-
-  // --- AI Chatbot Assistant Logic ---
-
-  private toggleChat(show: boolean): void {
-      if (show) {
-          this.initializeChat();
-          this.chatModal.style.display = 'flex';
-          setTimeout(() => this.chatModal.classList.add('visible'), 10);
-          this.chatInput.focus();
-      } else {
-          this.chatModal.classList.remove('visible');
-          setTimeout(() => { if (!this.chatModal.classList.contains('visible')) this.chatModal.style.display = 'none'; }, 200);
-      }
-  }
-
-  private initializeChat(): void {
-      if (this.chat) return;
-      
-      let context = "You are a friendly and empathetic Memoir Assistant. Your goal is to help the user document their life story. You can help them understand questions, rephrase them, offer encouragement, and suggest what to work on next. Keep your answers concise and supportive.\n\n";
-      context += "Here is some core information about the user to help you personalize your responses:\n";
-      if (this.coreInfo.summary) context += `- Life Summary: ${this.coreInfo.summary}\n`;
-      if (this.coreInfo.people) context += `- Key People: ${this.coreInfo.people}\n`;
-      if (this.coreInfo.values) context += `- Core Values: ${this.coreInfo.values}\n`;
-
-      this.chat = this.genAI.chats.create({ 
-          model: MODEL_NAME, 
-          config: { systemInstruction: context } 
-      });
-
-      this.addMessageToChatUI("Hello! How can I help you with your memoir today?", "bot");
-  }
-
-  private async handleSendMessage(): Promise<void> {
-      const message = this.chatInput.value.trim();
-      if (!message) return;
-
-      this.addMessageToChatUI(message, "user");
-      this.chatInput.value = '';
-      this.chatInput.style.height = 'auto';
-      this.chatSendBtn.disabled = true;
-
-      const typingIndicator = this.addMessageToChatUI("...", "bot", true);
-
-      try {
-          if (!this.chat) this.initializeChat();
-          const response = await this.chat!.sendMessage({ message });
-          
-          typingIndicator.remove();
-          this.addMessageToChatUI(response.text, "bot");
-      } catch (error) {
-          console.error("Chat error:", error);
-          typingIndicator.remove();
-          this.addMessageToChatUI("Sorry, I encountered an error. Please try again.", "bot");
-      } finally {
-          this.chatSendBtn.disabled = false;
-      }
-  }
-
-  private addMessageToChatUI(text: string, sender: 'user' | 'bot', isTyping: boolean = false): HTMLElement {
-    const messageElement = document.createElement('div');
-    messageElement.className = `chat-message ${sender}`;
-    
-    const bubble = document.createElement('div');
-    bubble.className = 'message-bubble';
-    
-    if (isTyping) {
-        messageElement.classList.add('typing');
-        bubble.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
-    } else {
-        bubble.textContent = text;
-    }
-    
-    messageElement.appendChild(bubble);
-    this.chatMessages.appendChild(messageElement);
-    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-    return messageElement;
   }
 }
 
