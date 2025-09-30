@@ -697,11 +697,72 @@ class LivingMemoirApp {
 
   private renderDashboard(): void {
     this.dashboardContent.innerHTML = '';
+
+    // Add welcome guide for new users
+    if (this.isFirstTimeUser()) {
+      this.dashboardContent.appendChild(this.createWelcomeGuide());
+    }
+
     this.dashboardContent.appendChild(this.createCoreInfoSection());
     this.dashboardContent.appendChild(this.createJournalSection());
     LIFE_STAGES.forEach(stage => {
       this.dashboardContent.appendChild(this.createChapterDropdown(stage));
     });
+  }
+
+  private isFirstTimeUser(): boolean {
+    // Check if user has dismissed welcome or has any content
+    const welcomeDismissed = localStorage.getItem('memoir_welcome_dismissed') === 'true';
+    const hasContent = this.answers.size > 0 || this.journalEntries.length > 0 ||
+      this.coreInfo.summary || this.coreInfo.people || this.coreInfo.values;
+
+    return !welcomeDismissed && !hasContent;
+  }
+
+  private createWelcomeGuide(): HTMLElement {
+    const guide = document.createElement('div');
+    guide.className = 'welcome-guide';
+    guide.innerHTML = `
+      <div class="welcome-header">
+        <h2><i class="fas fa-heart"></i> Welcome to Your Living Memoir</h2>
+        <button class="welcome-close" title="Close welcome guide">&times;</button>
+      </div>
+      <div class="welcome-content">
+        <div class="welcome-step">
+          <div class="step-icon">1</div>
+          <div class="step-content">
+            <h3>Start with Your Foundation</h3>
+            <p>Begin by filling out "My Story's Foundation" below - this helps personalize your experience.</p>
+          </div>
+        </div>
+        <div class="welcome-step">
+          <div class="step-icon">2</div>
+          <div class="step-content">
+            <h3>Explore Life Stages</h3>
+            <p>Click on any life stage to reveal thoughtful questions. You can type or record audio responses.</p>
+          </div>
+        </div>
+        <div class="welcome-step">
+          <div class="step-icon">3</div>
+          <div class="step-content">
+            <h3>Export Your Memoir</h3>
+            <p>Use the "Export" button in the header to save your memoir as a beautiful PDF or backup your data.</p>
+          </div>
+        </div>
+        <div class="welcome-privacy">
+          <p><strong>🔒 Your Privacy:</strong> Everything stays in your browser. No accounts, no tracking, no data sent to servers.</p>
+        </div>
+      </div>
+    `;
+
+    // Add close functionality
+    const closeBtn = guide.querySelector('.welcome-close') as HTMLButtonElement;
+    closeBtn.addEventListener('click', () => {
+      guide.remove();
+      localStorage.setItem('memoir_welcome_dismissed', 'true');
+    });
+
+    return guide;
   }
 
   private createCoreInfoSection(): HTMLElement {

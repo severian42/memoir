@@ -18,17 +18,20 @@
         <header class="app-header">
             <h1 class="app-title"><i class="fas fa-book-open"></i> The Living Memoir</h1>
             <div class="header-actions">
-              <span id="save-status" class="save-status" title="Auto-save status">
+              <span id="save-status" class="save-status" title="Your memoir is automatically saved every 30 seconds. Green checkmark means all changes are saved safely in your browser.">
                 <i class="fas fa-check-circle"></i>
               </span>
-              <button class="action-button" id="exportButton" title="Compile & Export Memoir">
+              <button class="action-button" id="exportButton" title="📖 Compile & Export Your Memoir - Click to preview your complete memoir and save it as a PDF file to your computer. You can also export/import your data for backup.">
                 <i class="fas fa-file-export"></i>
+                <span class="button-label">Export</span>
               </button>
-              <button class="action-button" id="ttsToggleButton" title="Toggle Voice">
+              <button class="action-button" id="ttsToggleButton" title="🔊 Toggle Voice Reading - When enabled, questions will be read aloud to you. Click to turn voice on/off.">
                 <i class="fas fa-volume-high"></i>
+                <span class="button-label">Voice</span>
               </button>
-              <button class="action-button" id="themeToggleButton" title="Toggle Theme">
+              <button class="action-button" id="themeToggleButton" title="🌙 Switch Theme - Toggle between dark mode (easier on eyes) and light mode. Your preference is saved automatically.">
                 <i class="fas fa-sun"></i>
+                <span class="button-label">Theme</span>
               </button>
             </div>
         </header>
@@ -56,21 +59,32 @@
                 <button id="compile-modal-close" class="action-button close-button" title="Close">&times;</button>
             </div>
             <div class="compile-modal-body">
+                <div class="export-instructions">
+                    <p><strong>📖 Your Memoir Preview:</strong> Review your complete memoir below. You can edit the text directly if needed.</p>
+                    <p><strong>💾 To Save as PDF:</strong> Click "Export as PDF" below. Your browser will generate and download a beautifully formatted PDF file.</p>
+                    <p><strong>🔒 Privacy:</strong> Everything happens in your browser - no data is sent to any servers.</p>
+                </div>
                 <div id="memoir-preview-content" class="memoir-preview-content" spellcheck="false"></div>
                 <div class="ai-features">
                     <button id="suggest-title-btn" class="secondary-button suggest-title-btn">
                         <i class="fas fa-wand-magic-sparkles"></i> Suggest Titles
                     </button>
                     <div id="title-suggestions-container" class="title-suggestions-container">
-                        <!-- AI-generated title suggestions will be rendered here -->
+                        <!-- Title suggestions will be rendered here -->
                     </div>
                 </div>
             </div>
             <div class="modal-actions">
-                <button id="export-data-btn" class="modal-button secondary">Export Data</button>
-                <button id="import-data-btn" class="modal-button secondary">Import Data</button>
+                <button id="export-data-btn" class="modal-button secondary" title="💾 Download a backup file (.json) of all your memoir data to save or share">
+                    <i class="fas fa-download"></i> Backup Data
+                </button>
+                <button id="import-data-btn" class="modal-button secondary" title="📁 Upload a previously saved backup file to restore your memoir data">
+                    <i class="fas fa-upload"></i> Restore Data
+                </button>
                 <input type="file" id="import-data-input" accept=".json" style="display: none;">
-                <button id="download-memoir-btn" class="modal-button primary">Export as PDF</button>
+                <button id="download-memoir-btn" class="modal-button primary" title="📄 Generate and download your memoir as a beautifully formatted PDF document">
+                    <i class="fas fa-file-pdf"></i> Save as PDF
+                </button>
             </div>
         </div>
     </div>
