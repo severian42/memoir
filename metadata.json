@@ -1,0 +1,8 @@
+{
+  "name": "The Living Memoir",
+  "description": "An AI-powered autobiographical tool to help you capture and preserve your life story.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}
